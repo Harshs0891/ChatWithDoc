@@ -1,0 +1,212 @@
+<!-- templates/landing.html -->
+{% extends "base.html" %}
+
+{% block title %}Document Intelligence - Secure AI Analysis{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-4 fw-bold mb-4">
+                        <i class="fas fa-shield-alt text-success me-3"></i>
+                        Document Intelligence
+                    </h1>
+                    <p class="lead mb-4">
+                        Advanced AI-powered document analysis system designed for operations.
+                        Secure, fast, and intelligent analysis of tactical documents, reports, and intelligence files.
+                    </p>
+
+                    <div class="row mb-4">
+                        <div class="col-sm-6 mb-3">
+                            <div class="feature-card h-100">
+                                <i class="fas fa-lock fa-2x text-success mb-2"></i>
+                                <h5>Secure Analysis</h5>
+                                <p class="small mb-0">End-to-end encryption with military-grade security protocols.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="feature-card h-100">
+                                <i class="fas fa-bolt fa-2x text-warning mb-2"></i>
+                                <h5>Real-time Processing</h5>
+                                <p class="small mb-0">Instant document analysis with AI-powered insights.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="feature-card h-100">
+                                <i class="fas fa-brain fa-2x text-info mb-2"></i>
+                                <h5>AI Intelligence</h5>
+                                <p class="small mb-0">Advanced language models for tactical analysis.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <div class="feature-card h-100">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h5>Multi-User Support</h5>
+                                <p class="small mb-0">Role-based access with clearance levels.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cta-buttons">
+                        <a href="{{ url_for('login') }}" class="btn btn-btn-lg me-3">
+                            <i class="fas fa-sign-in-alt me-2"></i>Access System
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Request Access
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="hero-image text-center">
+                    <div class="system-preview">
+                        <div class="preview-header">
+                            <div class="preview-controls">
+                                <span class="control-dot bg-danger"></span>
+                                <span class="control-dot bg-warning"></span>
+                                <span class="control-dot bg-success"></span>
+                            </div>
+                            <div class="classification-badge">UNCLASSIFIED</div>
+                        </div>
+                        <div class="preview-content">
+                            <div class="upload-zone">
+                                <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                                <h5>Secure Document Upload</h5>
+                                <p class="text-muted">PDF, DOCX, TXT supported</p>
+                            </div>
+                            <div class="chat-preview">
+                                <div class="message-bubble user">
+                                    What are the key tactical objectives?
+                                </div>
+                                <div class="message-bubble ai">
+                                    Based on the uploaded documents, the primary objectives are...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, rgba(26, 71, 42, 0.05) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(26, 71, 42, 0.05) 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .feature-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .system-preview {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .preview-header {
+        background: #f8f9fa;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .preview-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .control-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .classification-badge {
+        background: var(--military-primary);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+
+    .preview-content {
+        padding: 2rem;
+    }
+
+    .upload-zone {
+        border: 2px dashed #e9ecef;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chat-preview .message-bubble {
+        padding: 0.75rem 1rem;
+        border-radius: 15px;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+
+    .message-bubble.user {
+        background: var(--military-primary);
+        color: white;
+        text-align: right;
+        border-radius: 15px 15px 5px 15px;
+        margin-left: 2rem;
+    }
+
+    .message-bubble.ai {
+        background: #f8f9fa;
+        color: #333;
+        border: 1px solid #e9ecef;
+        border-radius: 15px 15px 15px 5px;
+        margin-right: 2rem;
+    }
+
+    .features-section {
+        background: white;
+    }
+
+    .capability-card {
+        padding: 2rem;
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .capability-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .capability-icon {
+        color: var(--military-accent);
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}

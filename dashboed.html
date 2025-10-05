@@ -1,0 +1,895 @@
+< !DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Advanced AI-Powered Document Analysis </title><link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}"><script src="{{ url_for('static', filename='js/chart.min.js') }}"></script><link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.min.css') }}">< !-- PDF.js library (offline) --><script src="{{ url_for('static', filename='js/pdf.min.js') }}"></script><script src="{{ url_for('static', filename='js/pdf.worker.js') }}"></script><script src="{{ url_for('static', filename='js/pdf.js') }}"></script><style>.military-green {
+    background: linear-gradient(135deg, #1a472a, #2d5a3d);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.pdf-container {
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.chat-container {
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.pdf-page {
+    margin: 20px auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.upload-area {
+    transition: all 0.3s ease;
+    border: 2px dashed #d1d5db;
+}
+
+.upload-area:hover,
+.upload-area.drag-over {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.typing-indicator {
+    display: none;
+}
+
+.typing-indicator.active {
+    display: flex;
+}
+
+.message-bubble {
+    max-width: 85%;
+    word-wrap: break-word;
+}
+
+.highlight-overlay {
+    position: absolute;
+    background-color: rgba(255, 215, 0, 0.4);
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.highlight-overlay.active {
+    background-color: rgba(255, 100, 100, 0.6);
+    box-shadow: 0 0 0 2px rgba(255, 100, 100, 0.8);
+}
+
+.pdf-viewport {
+    position: relative;
+}
+
+.page-navigation {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.page-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+    background: #2563eb;
+}
+
+.page-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-weight: 600;
+    color: #374151;
+}
+
+.source-citation {
+    background: rgba(59, 130, 246, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #3b82f6;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 2px;
+    display: inline-block;
+}
+
+.source-citation:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+}
+
+.text-chunk {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.text-chunk:hover {
+    background: rgba(255, 215, 0, 0.4);
+    transform: translateY(-1px);
+}
+
+.smooth-transition {
+    transition: all 0.3s ease-in-out;
+}
+
+.header-area {
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.input-area {
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.question-area {
+    max-height: 120px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.chat-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* Structured Response Styles */
+.structured-response {
+    line-height: 1.6;
+}
+
+.structured-response .response-section {
+    margin-bottom: 1.5rem;
+}
+
+.structured-response .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid #3b82f6;
+    display: inline-block;
+}
+
+.structured-response .point-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.structured-response .response-point {
+    margin-bottom: 0.75rem;
+    padding-left: 1.25rem;
+    position: relative;
+    line-height: 1.6;
+}
+
+.structured-response .response-point:before {
+    content: "•";
+    color: #3b82f6;
+    font-size: 1.2rem;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.structured-response .page-reference {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+}
+
+.structured-response .page-reference:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.structured-response .page-reference i {
+    font-size: 0.7rem;
+}
+
+.structured-response .response-paragraph {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 4px;
+    border-left: 3px solid #3b82f6;
+}
+
+/* Policy-style formatting */
+.policy-style .response-point {
+    background: rgba(156, 182, 218, 0.1);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    border-left: 3px solid #9cb6da;
+}
+
+.policy-style .page-reference {
+    background: #9cb6da;
+    color: white;
+    padding: 1px 6px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 6px;
+}
+
+/* Custom scrollbar */
+.messages-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Additional formatting for better readability */
+.ai-message .structured-response h4 {
+    color: #1e40af;
+    font-size: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.ai-message .structured-response ul {
+    margin-bottom: 1rem;
+}
+
+.ai-message .structured-response li {
+    margin-bottom: 0.5rem;
+}
+
+/* Animation for page navigation */
+.page-reference.animate-click {
+    animation: clickPulse 0.3s ease-in-out;
+}
+
+@keyframes clickPulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+</style></head><body class="overflow-hidden"><nav class="military-green shadow-xl"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex justify-between h-16"><div class="flex items-center"><div class="flex items-center space-x-4"><i class="fas fa-shield-alt text-white text-2xl"></i><div><h1 class="text-white text-xl font-bold">Document Intelligence System</h1><p class="text-green-200 text-sm">Advanced AI-Powered Document Analysis</p></div></div></div><div class="flex items-center space-x-4"><div class="text-white text-sm"><i class="fas fa-user-circle mr-2"></i><span>Administrator</span></div><button id="clear-session-btn" class="clear-session-btn hidden"><i class="fas fa-trash-alt"></i>Clear Session </button><a href="/admin"
+class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all flex items-center gap-2"><i class="fas fa-arrow-left"></i>Dashboard </a><a href="/logout"
+class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all flex items-center gap-2"><i class="fas fa-sign-out-alt"></i>Logout </a></div></div></div></nav><div class="flex h-screen w-full">< !-- Left Panel - PDF Viewer --><div class="flex-1  bg-white border-r border-gray-200 flex flex-col">< !-- Upload Section --><div id="upload-section" class="h-full flex flex-col"><div class="flex-1 flex items-center justify-center p-8"><div class="upload-area rounded-xl p-12 text-center cursor-pointer max-w-md w-full" id="drop-zone"><i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-6"></i><h3 class="text-xl font-semibold text-gray-800 mb-3">Upload PDF Document</h3><p class="text-gray-600 mb-4">Drop your PDF here or click to browse</p><input type="file" id="file-input" accept=".pdf,.docx,.txt" class="hidden"><button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all font-medium"
+id="select-file-btn"><i class="fas fa-file-pdf mr-2"></i>Select File </button></div></div></div>< !-- PDF Viewer --><div id="pdf-viewer" class="pdf-container hidden"><div class="p-4 border-b border-gray-200 bg-white header-area"><div class="flex justify-between items-center"><div class="flex items-center space-x-3"><i class="fas fa-file-pdf text-red-500"></i><span class="font-medium text-gray-800" id="pdf-filename">Document</span></div><button id="new-document" class="text-blue-600 hover:text-blue-800 text-sm"><i class="fas fa-plus mr-1"></i>New Document </button></div></div>< !-- Page Navigation --><div class="page-navigation hidden" id="page-navigation"><button class="page-btn" id="prev-page" disabled><i class="fas fa-chevron-left mr-1"></i>Previous </button><span class="page-info" id="page-info">Page 1 of 1</span><button class="page-btn" id="next-page" disabled>Next<i class="fas fa-chevron-right ml-1"></i></button></div><div class="pdf-viewport"><div id="pdf-content" class="p-4"></div><div id="highlight-overlay"></div></div></div></div>< !-- Right Panel - Chat Interface --><div class="flex-1  chat-container bg-white flex flex-col">< !-- Chat Header --><div class="p-4 border-b border-gray-200 header-area"><h2 class="text-lg font-semibold text-gray-800 flex items-center"><i class="fas fa-robot mr-2 text-blue-600"></i>AI Assistant </h2><p class="text-sm text-gray-500 mt-1">Ask questions about your uploaded document</p></div>< !-- Smart Questions --><div id="smart-questions-section" class="hidden p-4 border-b border-gray-200 bg-gray-50 question-area"><h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Suggested Questions </h3><div class="grid grid-cols-1 gap-2" id="smart-questions-container"></div></div>< !-- Messages Container --><div class="messages-container" id="messages-container"><div class="flex flex-col justify-center items-center h-full text-center" id="empty-state"><i class="fas fa-comments text-6xl text-gray-300 mb-4"></i><h3 class="text-xl font-semibold text-gray-600 mb-2">Ready to Chat</h3><p class="text-gray-500">Upload a document to start asking questions</p></div></div>< !-- Typing Indicator --><div class="typing-indicator px-4 py-2 border-t border-gray-200" id="typing-indicator"><div class="flex items-center space-x-2"><div class="flex space-x-1"><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div><div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div></div><span class="text-sm text-gray-500">AI is thinking...</span></div></div>< !-- Input Area --><div class="p-4 border-t border-gray-200 bg-white input-area"><div class="flex items-center space-x-3"><input type="text" id="message-input" placeholder="Ask questions about your document..."
+class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+disabled><button id="send-button"
+class="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-all disabled:bg-gray-400"
+disabled><i class="fas fa-paper-plane"></i></button></div></div></div></div><script> // Global variables
+let pdfDocument=null;
+let documentProcessed=false;
+let currentScale=1.2;
+let currentPage=1;
+let totalPages=1;
+let currentHighlights=[];
+
+let textByPage= {}
+
+;
+
+// DOM elements
+const dropZone=document.getElementById('drop-zone');
+const fileInput=document.getElementById('file-input');
+const uploadSection=document.getElementById('upload-section');
+const pdfViewer=document.getElementById('pdf-viewer');
+const pdfContent=document.getElementById('pdf-content');
+const messagesContainer=document.getElementById('messages-container');
+const messageInput=document.getElementById('message-input');
+const sendButton=document.getElementById('send-button');
+const typingIndicator=document.getElementById('typing-indicator');
+const emptyState=document.getElementById('empty-state');
+const pageNavigation=document.getElementById('page-navigation');
+const prevPageBtn=document.getElementById('prev-page');
+const nextPageBtn=document.getElementById('next-page');
+const pageInfo=document.getElementById('page-info');
+const highlightOverlay=document.getElementById('highlight-overlay');
+const smartQuestionsSection=document.getElementById('smart-questions-section');
+
+// File upload handlers
+dropZone.addEventListener('click', ()=> fileInput.click());
+document.getElementById('select-file-btn').addEventListener('click', ()=> fileInput.click());
+
+// Drag and drop
+['dragenter',
+'dragover',
+'dragleave',
+'drop'].forEach(eventName=> {
+        dropZone.addEventListener(eventName, e=> {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            , false);
+    });
+
+dropZone.addEventListener('drop', e=> {
+        const files=e.dataTransfer.files;
+        if (files.length > 0) processFile(files[0]);
+    });
+
+fileInput.addEventListener('change', e=> {
+        if (e.target.files.length > 0) processFile(e.target.files[0]);
+    });
+
+// Process uploaded file
+async function processFile(file) {
+    try {
+        showProcessingState();
+
+        const formData=new FormData();
+        formData.append('file', file);
+
+        const response=await fetch('/process-pdf', {
+            method: 'POST',
+            body: formData
+        });
+
+    const result=await response.json();
+
+    if (result.success) {
+        if (file.type==='application/pdf') {
+            await renderPDF(file);
+        }
+
+        setupChatInterface(file.name, result.chunks);
+        loadSmartQuestions();
+    }
+
+    else {
+        showError(result.message);
+    }
+}
+
+catch (error) {
+    showError('Error processing file: ' + error.message);
+}
+}
+
+// Render PDF with page navigation
+async function renderPDF(file) {
+    const arrayBuffer=await file.arrayBuffer();
+
+    const loadingTask=pdfjsLib.getDocument({
+        data: arrayBuffer
+    });
+
+pdfDocument=await loadingTask.promise;
+totalPages=pdfDocument.numPages;
+currentPage=1;
+
+// Show page navigation
+pageNavigation.classList.remove('hidden');
+updatePageControls();
+
+// Render first page
+await renderPage(currentPage);
+}
+
+// Render specific page
+async function renderPage(pageNum) {
+    if ( !pdfDocument || pageNum < 1 || pageNum > totalPages) return;
+
+    // Clear previous content
+    pdfContent.innerHTML='';
+    clearHighlights();
+
+    // Render the page
+    const page=await pdfDocument.getPage(pageNum);
+
+    const viewport=page.getViewport({
+        scale: currentScale
+    });
+const canvas=document.createElement('canvas');
+const context=canvas.getContext('2d');
+canvas.height=viewport.height;
+canvas.width=viewport.width;
+canvas.className='pdf-page smooth-transition';
+
+// Add page number as data attribute
+canvas.setAttribute('data-page-number', pageNum);
+
+await page.render({
+    canvasContext: context, viewport
+}).promise;
+pdfContent.appendChild(canvas);
+
+// Extract text from page for highlighting
+try {
+    const textContent=await page.getTextContent();
+    textByPage[pageNum]=textContent.items.map(item=> item.str).join(' ');
+}
+
+catch (error) {
+    console.error('Error extracting text from page:', error);
+}
+
+// Update current page and controls
+currentPage=pageNum;
+updatePageControls();
+
+// Reapply any highlights for this page
+applyHighlightsForPage(pageNum);
+}
+
+// Update page navigation controls
+function updatePageControls() {
+    pageInfo.textContent=`Page $ {
+        currentPage
+    }
+
+    of $ {
+        totalPages
+    }
+
+    `;
+    prevPageBtn.disabled=currentPage <=1;
+    nextPageBtn.disabled=currentPage>=totalPages;
+}
+
+// Navigate to previous page
+async function goToPrevPage() {
+    if (currentPage > 1) {
+        await renderPage(currentPage - 1);
+
+        pdfContent.parentElement.scrollTo({
+            top: 0, behavior: 'smooth'
+        });
+}
+}
+
+// Navigate to next page
+async function goToNextPage() {
+    if (currentPage < totalPages) {
+        await renderPage(currentPage + 1);
+
+        pdfContent.parentElement.scrollTo({
+            top: 0, behavior: 'smooth'
+        });
+}
+}
+
+// Navigate to specific page (called from page references)
+window.navigateToPage=async function (pageNum) {
+    const targetPage=parseInt(pageNum);
+
+    if (targetPage >=1 && targetPage <=totalPages && targetPage !==currentPage) {
+        await renderPage(targetPage);
+
+        pdfContent.parentElement.scrollTo({
+            top: 0, behavior: 'smooth'
+        });
+
+    // Add visual feedback
+    const pageRefs=document.querySelectorAll(`[data-page="${pageNum}"]`);
+
+    pageRefs.forEach(ref=> {
+            ref.classList.add('animate-click');
+            setTimeout(()=> ref.classList.remove('animate-click'), 300);
+        });
+}
+}
+
+;
+
+// Clear all highlights
+function clearHighlights() {
+    highlightOverlay.innerHTML='';
+    currentHighlights=currentHighlights.filter(h=> h.page !==currentPage);
+}
+
+// Apply highlights for current page
+function applyHighlightsForPage(pageNum) {
+    const pageHighlights=currentHighlights.filter(h=> h.page===pageNum);
+
+    pageHighlights.forEach(highlight=> {
+            createHighlight(highlight.rects, highlight.color, highlight.text);
+        });
+}
+
+// Create highlight overlay
+function createHighlight(rects, color, text='') {
+    rects.forEach(rect=> {
+            const highlight=document.createElement('div');
+            highlight.className='highlight-overlay';
+            highlight.style.backgroundColor=color || 'rgba(255, 215, 0, 0.4)';
+
+            highlight.style.left=`$ {
+                rect.left
+            }
+
+            px`;
+
+            highlight.style.top=`$ {
+                rect.top
+            }
+
+            px`;
+
+            highlight.style.width=`$ {
+                rect.width
+            }
+
+            px`;
+
+            highlight.style.height=`$ {
+                rect.height
+            }
+
+            px`;
+            highlight.setAttribute('data-text', text);
+            highlightOverlay.appendChild(highlight);
+        });
+}
+
+// Find text in PDF and highlight it
+async function highlightTextInPdf(text, pageNum, color) {
+    if ( !pdfDocument || !text) return;
+
+    try {
+        const page=await pdfDocument.getPage(pageNum);
+        const textContent=await page.getTextContent();
+
+        const viewport=page.getViewport({
+            scale: currentScale
+        });
+
+    const foundRects=[];
+    const searchText=text.toLowerCase();
+
+    // Search for the text
+    for (const item of textContent.items) {
+        if (item.str.toLowerCase().includes(searchText)) {
+            const tx=pdfjsLib.Util.transform(viewport.transform, item.transform);
+
+            foundRects.push({
+                left: tx[4],
+                top: tx[5],
+                width: item.width * viewport.width / 100,
+                height: item.height * viewport.height / 100
+            });
+    }
+}
+
+if (foundRects.length > 0) {
+
+    // Store highlight
+    currentHighlights.push({
+        page: pageNum,
+        rects: foundRects,
+        color: color || 'rgba(255, 215, 0, 0.4)',
+        text: text
+    });
+
+// Apply highlight if we're on the correct page
+if (pageNum===currentPage) {
+    createHighlight(foundRects, color, text);
+
+    // Animate the highlight
+    const highlights=highlightOverlay.querySelectorAll('.highlight-overlay');
+
+    highlights.forEach(hl=> {
+            hl.classList.add('active');
+            setTimeout(()=> hl.classList.remove('active'), 1000);
+        });
+}
+
+return true;
+}
+}
+
+catch (error) {
+    console.error('Error highlighting text:', error);
+}
+
+return false;
+}
+
+// Find page number for a text chunk
+function findPageForChunk(chunkText) {
+    if ( !chunkText) return 1;
+
+    for (let pageNum=1; pageNum <=totalPages; pageNum++) {
+        const pageText=textByPage[pageNum];
+
+        if (pageText && pageText.toLowerCase().includes(chunkText.toLowerCase())) {
+            return pageNum;
+        }
+    }
+
+    return 1; // Default to first page if not found
+}
+
+// Highlight chunk on specific page
+async function highlightChunkOnPage(pageNum, chunkText) {
+
+    // Navigate to the page if needed
+    if (pageNum !==currentPage) {
+        await renderPage(pageNum);
+    }
+
+    // Highlight the text
+    const success=await highlightTextInPdf(chunkText, pageNum, 'rgba(255, 100, 100, 0.6)');
+
+    if ( !success) {
+        // Fallback: just navigate to the page
+        await renderPage(pageNum);
+    }
+}
+
+// Setup chat interface
+function setupChatInterface(filename, chunks) {
+    uploadSection.classList.add('hidden');
+    pdfViewer.classList.remove('hidden');
+    document.getElementById('pdf-filename').textContent=filename;
+    messageInput.disabled=false;
+    sendButton.disabled=false;
+    documentProcessed=true;
+
+    // Add welcome message with structured formatting
+    const welcomeMessage=` <div class="structured-response"><div class="response-section"><div class="response-point"><i class="fas fa-check-circle text-green-500 mr-2"></i>Document processed successfully ! I've analyzed "${filename}" and divided it into ${chunks} chunks for efficient processing.
+ </div><div class="response-point">You can now ask me any questions about the document's content. I' ll provide structured answers with page references and source citations. </div><div class="response-point">Click on any page reference to navigate directly to that section in the PDF viewer. </div></div></div>`;
+    addMessage('ai', welcomeMessage);
+}
+
+// Load smart questions
+async function loadSmartQuestions() {
+    try {
+        const response=await fetch('/smart-questions');
+        const result=await response.json();
+
+        if (result.success && result.questions.length > 0) {
+
+            // Add document analysis as structured response
+            if (result.welcome) {
+                const analysisMessage=` <div class="structured-response"><div class="response-section"><h4 class="section-title">Document Analysis</h4><div class="response-paragraph">$ {
+                    result.welcome
+                }
+
+                </div></div></div>`;
+                addMessage('ai', analysisMessage);
+            }
+
+            // Create suggested questions with better formatting
+            let questionsHtml=` <div class="structured-response"><div class="response-section"><h4 class="section-title">Suggested Questions</h4><div class="grid gap-2">`;
+
+            result.questions.forEach((question, index)=> {
+                    questionsHtml +=` <button onclick="useQuestion('${question.replace(/'/g, " \\'")}')" 
+ class="bg-white text-left p-3 rounded-lg border border-gray-200 hover:border-blue-300 
+ transition-all text-sm text-gray-700 hover:text-blue-700 w-full hover:shadow-sm">
+ <i class="fas fa-question-circle text-blue-400 mr-2"></i>$ {
+                    question
+                }
+
+                </button>`;
+            });
+
+            questionsHtml+=` </div></div></div>`;
+            addMessage('ai', questionsHtml);
+
+            // Add useQuestion function to window object
+            window.useQuestion=(question)=> {
+                messageInput.value=question;
+                sendMessage();
+            }
+
+            ;
+        }
+    }
+
+    catch (error) {
+        console.error('Error loading smart questions:', error);
+    }
+}
+
+// Send message
+async function sendMessage() {
+    const message=messageInput.value.trim();
+    if ( !message || !documentProcessed) return;
+
+    addMessage('user', message);
+    messageInput.value='';
+    showTypingIndicator();
+
+    try {
+        const response=await fetch('/chat', {
+
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+
+            ,
+            body: JSON.stringify({
+                message
+            })
+    });
+
+const result=await response.json();
+hideTypingIndicator();
+
+if (result.success) {
+    // Use the formatted answer from backend
+    addMessage('ai', result.answer, result.source_details || []);
+}
+
+else {
+    addMessage('ai', '<div class="text-red-600">Error: ' + result.message + '</div>');
+}
+}
+
+catch (error) {
+    hideTypingIndicator();
+    addMessage('ai', '<div class="text-red-600">Error: Unable to connect to server</div>');
+}
+}
+
+// Add message to chat with enhanced formatting
+function addMessage(sender, content, sources=null) {
+    if (emptyState.style.display !=='none') {
+        emptyState.style.display='none';
+    }
+
+    const messageDiv=document.createElement('div');
+    const timestamp=new Date().toLocaleTimeString();
+
+    if (sender==='user') {
+        messageDiv.className='flex justify-end mb-4';
+
+        messageDiv.innerHTML=` <div class="message-bubble bg-blue-600 text-white rounded-2xl px-4 py-3"><div class="text-sm">$ {
+            content
+        }
+
+        </div><div class="text-xs opacity-75 mt-1">$ {
+            timestamp
+        }
+
+        </div></div>`;
+    }
+
+    else {
+        // Create sources HTML if available
+        let sourcesHtml='';
+
+        if (sources && sources.length > 0) {
+            sourcesHtml='<div class="mt-3 pt-2 border-t border-gray-200">';
+            sourcesHtml+='<div class="text-xs text-gray-500 mb-2">Sources:</div>';
+            sourcesHtml+='<div class="flex flex-wrap gap-1">';
+
+            sources.forEach((source, index)=> {
+                    const pageNum=source.page || findPageForChunk(source.text);
+
+                    sourcesHtml +=` <span class="source-citation" onclick="navigateToPage(${pageNum})" > <i class="fas fa-file-pdf mr-1" ></i> Page $ {
+                        pageNum
+                    }
+
+                    </span> `;
+                });
+
+            sourcesHtml+='</div></div>';
+        }
+
+        messageDiv.className='flex justify-start mb-4';
+
+        messageDiv.innerHTML=` <div class="message-bubble bg-gray-100 rounded-2xl px-4 py-3 ai-message"><div class="flex items-center mb-2"><i class="fas fa-robot text-blue-600 mr-2"></i><span class="text-xs font-medium text-gray-700">AI Assistant</span></div><div class="text-sm text-gray-800 leading-relaxed">$ {
+            content
+        }
+
+        </div>$ {
+            sourcesHtml
+        }
+
+        <div class="text-xs text-gray-500 mt-2">$ {
+            timestamp
+        }
+
+        </div></div>`;
+    }
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop=messagesContainer.scrollHeight;
+}
+
+// UI state functions
+function showProcessingState() {
+    uploadSection.innerHTML=` <div class="flex-1 flex items-center justify-center p-8"><div class="bg-blue-600 text-white rounded-xl p-12 text-center max-w-md w-full"><i class="fas fa-spinner fa-spin text-6xl mb-6"></i><h3 class="text-xl font-semibold mb-3">Processing Document</h3><p class="mb-4">Please wait...</p></div></div>`;
+}
+
+function showError(message) {
+    uploadSection.innerHTML=` <div class="flex-1 flex items-center justify-center p-8"><div class="border-red-300 bg-red-50 rounded-xl p-12 text-center max-w-md w-full"><i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-6"></i><h3 class="text-xl font-semibold text-red-800 mb-3">Error</h3><p class="text-red-700 mb-6">$ {
+        message
+    }
+
+    </p><button onclick="location.reload()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700">Try Again </button></div></div>`;
+}
+
+function showTypingIndicator() {
+    typingIndicator.classList.add('active');
+}
+
+function hideTypingIndicator() {
+    typingIndicator.classList.remove('active');
+}
+
+// Event listeners
+sendButton.addEventListener('click', sendMessage);
+
+messageInput.addEventListener('keypress', e=> {
+        if (e.key==='Enter') sendMessage();
+    });
+
+document.getElementById('new-document').addEventListener('click', ()=> {
+        location.reload();
+    });
+
+// Page navigation event listeners
+prevPageBtn.addEventListener('click', goToPrevPage);
+nextPageBtn.addEventListener('click', goToNextPage);
+
+// Make functions available globally for onclick handlers
+window.highlightChunkOnPage=highlightChunkOnPage;
+</script></body></html>

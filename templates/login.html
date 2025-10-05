@@ -1,0 +1,55 @@
+<!-- templates/login.html -->
+{% extends "base.html" %}
+
+{% block title %}Login - Document Intelligence{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center min-vh-100">
+    <div class="row w-100 justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header text-center bg-primary text-white">
+                    <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                    <h3 class="mb-0">Secure Access</h3>
+                    <p class="mb-0 opacity-75">Document Intelligence System</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-2"></i>Username
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Password
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <!-- Colorful login button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>Access System
+                            </button>
+                        </div>
+
+                    </form>
+                    <hr>
+                    <div class="text-center">
+                        <p class="text-muted bg-blue-600">Need access credentials?</p>
+
+                        <!-- Colorful request access button -->
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-success">
+                            <i class="fas fa-user-plus me-2"></i>Request Access
+                        </a>
+                    </div>
+                    <hr>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

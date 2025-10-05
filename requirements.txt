@@ -1,0 +1,47 @@
+flask
+click
+itsdangerous
+Jinja2
+MarkupSafe
+Werkzeug
+blinker
+
+numpy>=1.24.0
+
+requests>=2.28.0
+certifi
+charset-normalizer
+idna
+urllib3
+
+PyMuPDF>=1.23.0
+
+reportlab
+pillow
+
+langchain-core>=0.1.0
+pydantic
+pydantic-core
+typing-extensions
+PyYAML
+tenacity
+
+python-docx>=0.8.11
+lxml
+
+langchain-community
+langchain-text-splitters
+langsmith
+SQLAlchemy
+aiohttp
+
+# # Torch GPU build (change cu121 if needed, e.g., cu118 for CUDA 11.8)
+
+# torch==2.2.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+# torchvision==0.17.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+# torchaudio==2.2.2+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+
+# filelock
+# sympy
+# fsspec
+# networkx

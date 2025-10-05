@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Military Document Intelligence</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <script src="{{ url_for('static', filename='js/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tailwind.js') }}"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        military: {
+                            light: '#7e9d88',
+                            DEFAULT: '#4a6741',
+                            medium: '#3d5536',
+                            dark: '#2f3f2a',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-in': 'slideIn 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Roboto Condensed', sans-serif;
+        }
+
+        .military-gradient {
+            background: #1a472a;
+            ;
+        }
+
+        .nav-shadow {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234a6741' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: -1;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+            border-left: 4px solid #4a6741;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-military {
+            background: #4a6741;
+            transition: all 0.3s ease;
+        }
+
+        .btn-military:hover {
+            background: #3d5536;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+
+        .toast {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.info {
+            background: #3b82f6;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c5c5c5;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .modal-transition {
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(74, 103, 65, 0.2);
+            border-radius: 50%;
+            border-top-color: #4a6741;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .table-row {
+            transition: all 0.2s ease;
+        }
+
+        .table-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .stat-card-icon {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover .stat-card-icon {
+            transform: scale(1.1);
+        }
+
+        .sortable:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="bg-pattern"></div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div class="flex items-center">
+            <span id="toast-icon" class="mr-2"></span>
+            <span id="toast-message"></span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <nav class="military-gradient nav-shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-alt text-white text-2xl mr-3"></i>
+                    <h1 class="text-white text-xl font-bold">Sudershan AI Intelligence Admin</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-white hidden md:inline">Administrator</span>
+                    <a href="/dashboard" class="btn-danger text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <i class="fas fa-arrow-left mr-1"></i>AiDoc
+                    </a>
+                    <a href="/logout" class="btn-danger text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8 fade-in">
+
+        <!-- User Management Table -->
+        <div class="bg-white rounded-xl shadow-lg mb-8 slide-in" style="animation-delay: 0.7s;">
+            <div
+                class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-users-cog mr-2 text-military"></i>User Management
+                </h3>
+                <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+                    <div class="relative">
+                        <input type="text" id="userSearch" placeholder="Search users..."
+                            class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-military focus:border-transparent w-full">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable"
+                                data-sort="username">
+                                User <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable"
+                                data-sort="rank">
+                                Rank <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable"
+                                data-sort="unit">
+                                Unit <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable"
+                                data-sort="queries">
+                                Queries <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer sortable"
+                                data-sort="last_login">
+                                Last Login <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="userTableBody">
+                        {% for user in user_stats %}
+                        <tr class="table-row" data-username="{{ user[1] | lower }}" data-rank="{{ user[2] | lower }}"
+                            data-unit="{{ user[3] | lower }}" data-queries="{{ user[6] }}"
+                            data-last_login="{{ user[5] }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div
+                                        class="flex-shrink-0 h-10 w-10 bg-green-700 rounded-full flex items-center justify-center">
+                                        <div
+                                            class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                            <span class="text-sm font-medium text-white">{{ user[1][0].upper() }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ user[1] }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span
+                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ user[2] }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user[3] }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                                    {{ user[6] }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ user[5] if user[5] else 'Never' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <button onclick="viewUserDetails({{ user[0] }})"
+                                    class="text-blue-600 hover:text-blue-900 bg-blue-100 px-3 py-1 rounded-lg transition-all hover:bg-blue-200">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </button>
+
+                                <button onclick="deleteUser({{ user[0] }}, '{{ user[1] }}')"
+                                    class="text-red-600 hover:text-red-900 bg-red-100 px-3 py-1 rounded-lg transition-all hover:bg-red-200">
+                                    <i class="fas fa-trash mr-1"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing <span id="showingCount">{{ user_stats|length }}</span> of <span id="totalCount">{{
+                        user_stats|length }}</span> results
+                </div>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 rounded border bg-white text-gray-700 disabled:opacity-50" id="prevPage"
+                        disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="px-3 py-1 rounded border bg-white text-gray-700 disabled:opacity-50" id="nextPage"
+                        disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Modal -->
+        <div id="userModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 modal-transition">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-xl bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">User Details</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="userModalContent">
+                    <div class="flex justify-center items-center py-8">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 modal-transition">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-xl bg-white">
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Confirm Deletion</h3>
+                    <p class="text-gray-600" id="deleteMessage">Are you sure you want to delete this personnel record
+                        and all associated assessments? This action cannot be undone.</p>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeDeleteModal()"
+                        class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                    <form id="deleteForm" method="POST" style="display: inline;">
+                        <button type="submit"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+
+            // Set icon based on type
+            let iconClass;
+            switch (type) {
+                case 'success':
+                    iconClass = 'fas fa-check-circle text-green-500';
+                    toast.className = toast.className.replace('hidden', '') + ' success';
+                    break;
+                case 'error':
+                    iconClass = 'fas fa-exclamation-circle text-red-500';
+                    toast.className = toast.className.replace('hidden', '') + ' error';
+                    break;
+                default:
+                    iconClass = 'fas fa-info-circle text-blue-500';
+                    toast.className = toast.className.replace('hidden', '') + ' info';
+            }
+
+            toastIcon.className = iconClass;
+            toastMessage.textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('show');
+
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        // View user details
+        function viewUserDetails(userId) {
+            const modal = document.getElementById('userModal');
+            const content = document.getElementById('userModalContent');
+            modal.classList.remove('hidden');
+            content.innerHTML = '<div class="flex justify-center py-8"><div class="spinner"></div></div>';
+
+            fetch(`/admin/user/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const recentQueries = data.recent_queries && data.recent_queries.length > 0 ?
+                        data.recent_queries.map(q => `
+                            <div class="bg-gray-50 p-3 rounded mb-2 border-l-4 border-military">
+                                <p class="text-sm font-medium">${q.query}</p>
+                                <p class="text-xs text-gray-500 mt-1"><i class="far fa-clock mr-1"></i>${q.timestamp}</p>
+                            </div>
+                        `).join('') :
+                        '<p class="text-gray-500 text-center py-4">No recent queries</p>';
+
+                    content.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-bold text-gray-700 mb-3 border-b pb-2">User Profile</h4>
+                                <div class="space-y-3">
+                                    <p><span class="font-semibold">Username:</span> ${data.username}</p>
+                                    <p><span class="font-semibold">Rank:</span> ${data.rank}</p>
+                                    <p><span class="font-semibold">Unit:</span> ${data.unit}</p>
+                                    <p><span class="font-semibold">Total Queries:</span> ${data.total_queries}</p>
+                                    <p><span class="font-semibold">Account Created:</span> ${data.join_date || 'N/A'}</p>
+                                    <p><span class="font-semibold">Last Active:</span> ${data.last_login || 'Never'}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-700 mb-3 border-b pb-2">Recent Activity</h4>
+                                <div class="max-h-64 overflow-y-auto custom-scrollbar">
+                                    ${recentQueries}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t flex justify-end">
+                            <button onclick="closeModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-3"></i>
+                            <p class="text-red-500 font-medium">Error loading user details</p>
+                            <p class="text-gray-600 mt-2">${error.message}</p>
+                            <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+
+        // Delete user functionality
+        function deleteUser(userId, username) {
+            const modal = document.getElementById('deleteModal');
+            const deleteForm = document.getElementById('deleteForm');
+            const deleteMessage = document.getElementById('deleteMessage');
+
+            deleteForm.action = `/admin/delete-user/${userId}`;
+            deleteMessage.innerHTML = `Are you sure you want to delete <strong>${username}</strong> and all associated data? This action cannot be undone.`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.add('hidden');
+        }
+
+        // Close modals
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const userModal = document.getElementById('userModal');
+            const deleteModal = document.getElementById('deleteModal');
+
+            if (event.target === userModal) {
+                closeModal();
+            }
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        }
+
+        // Table sorting functionality
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sort;
+                const tbody = document.getElementById('userTableBody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const isAscending = header.classList.contains('asc');
+
+                // Reset all headers
+                document.querySelectorAll('.sortable i').forEach(icon => {
+                    icon.className = 'fas fa-sort ml-1';
+                });
+
+                // Update current header
+                const icon = header.querySelector('i');
+                icon.className = isAscending ?
+                    'fas fa-sort-down ml-1' : 'fas fa-sort-up ml-1';
+
+                header.classList.toggle('asc');
+                header.classList.toggle('desc');
+
+                // Sort rows
+                rows.sort((a, b) => {
+                    let aValue = a.dataset[column];
+                    let bValue = b.dataset[column];
+
+                    // Handle numeric values
+                    if (column === 'queries') {
+                        aValue = parseInt(aValue);
+                        bValue = parseInt(bValue);
+                    }
+
+                    // Handle date values
+                    if (column === 'last_login') {
+                        aValue = aValue === 'never' ? 0 : new Date(aValue).getTime();
+                        bValue = bValue === 'never' ? 0 : new Date(bValue).getTime();
+                    }
+
+                    if (aValue < bValue) return isAscending ? 1 : -1;
+                    if (aValue > bValue) return isAscending ? -1 : 1;
+                    return 0;
+                });
+
+                // Remove existing rows
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+
+                // Add sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+
+        // Search functionality
+        document.getElementById('userSearch').addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#userTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const username = row.dataset.username;
+                const rank = row.dataset.rank;
+                const unit = row.dataset.unit;
+
+                if (username.includes(searchTerm) || rank.includes(searchTerm) || unit.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('showingCount').textContent = visibleCount;
+        });
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Show welcome message
+            setTimeout(() => {
+                showToast('Admin panel loaded successfully', 'success');
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
